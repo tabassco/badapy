@@ -88,7 +88,7 @@ def split_opf(file_path):
 
     fuel_cruise = file[55].split()
     fuel_cruise = [float(x) for x in fuel_cruise[1]]
-    fuel_dict = dict(zip(["cfcf"], fuel_cruise))
+    fuel_dict = dict(zip(["cf_cr"], fuel_cruise))
 
     fuel_dict = {**fuel_thrust_dict, **fuel_desc_dict, **fuel_dict}
 

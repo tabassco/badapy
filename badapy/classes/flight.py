@@ -1,9 +1,40 @@
-class Flight:
-    def __init__(self, tailsign, flightno, flightdata, used_plane):
+import pandas as pd
+import scipy.io as sio
+import pickle
+
+
+class Flight():
+    def __init__(self, tailsign, flightno, used_plane):
         self.tailsign = tailsign
         self.flightno = flightno
-        self.flightdata = flightdata
+        self.flightdata = None
         self.used_plane = used_plane
+
+    def load_flightdata(self, data_path, data_type = 'csv'):
+        """
+        Loads the Flight-Data from a given file path and type
+        :param data_path: Path to the Flight-Data file
+        :param data_type: Type of the Flight-Data
+        :return:
+        """
+
+        if data_type == 'csv':
+            flight_data = pd.read_csv(data_path)
+
+        elif data_type == 'matlab':
+            flight_data = sio.loadmat(data_path)
+
+        elif data_path == 'pickle':
+            with open(data_path, 'rb') as data:
+                flight_data = pickle.load(data)
+
+        else:
+            if data_type not in ['csv', 'matlab', 'pickle']:
+                raise ValueError('Invalid calculation method. Expected one of: %s' % ['csv', 'matlab', 'pickle'])
+
+        flight_data
+
+        self.flightdata = flight_data
 
     def __repr__(self):
         pass
@@ -30,16 +61,21 @@ class Flight:
 
     def calculate_fuel(self, method_used='minimum', sampling_rate=1):  # TODO: Add iterator for individual waypoints.
         """
-        Calculates the specific fuel consumption [kg/min] to then calculate the total fuel used
-        :param method_used: Choice of "thrust", "minimum", "cruise"; sampling_rate: time between waypoints [min]
+        Calculates the Total Fuel Consumption [kg} by adding the specific f
+        :param method_used: Choice of "thrust", "minimum", "cruise"
+        :param sampling_rate: time between waypoints [min]
         :return: fuel_sum: total fuel used [kg]
         """
+
         if method_used not in ['thrust', 'minimum', 'cruise']:
             raise ValueError('Invalid calculation method. Expected one of: %s' % ['thrust', 'minimum', 'cruise'])
         fuel_sum = 0
+        spec_fuel = []
 
         for i in range(self.flightdata.shape[0]):
-            fuel_sum += self.calculate_specific_fuel(method_used, i) * sampling_rate
+            curr_fuel = self.calculate_specific_fuel(method_used, i) * sampling_rate
+            spec_fuel.append(curr_fuel)
+            fuel_sum += curr_fuel
 
         return fuel_sum
 

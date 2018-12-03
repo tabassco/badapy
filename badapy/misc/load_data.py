@@ -2,7 +2,7 @@ def split_opf(file_path):
     """
     returns a set of lists with aircraft performance parameters
     :param file_path:
-    :return:
+    :return: 
     """
     with open(file_path) as read_in:
         file = read_in.readlines()

@@ -18,7 +18,7 @@ class Airplane:
         # Information from AFP File
         self.proc_climb = None
         self.proc_cruise = None
-        self.proc_desc = None   
+        self.proc_desc = None
 
     def load_information(self, file_path):
         data_folder = path.join(file_path)

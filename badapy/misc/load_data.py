@@ -94,8 +94,8 @@ def split_opf(file_path):
 
     return mass_dict, flight_env_dict, aero_dict, config_CR_dict, engine_dict, fuel_dict
 
-def split_afp(file_path):
 
+def split_afp(file_path):
     procedure_climb_dict = None
     procedure_cruise_dict = None
     procedure_desc_dict = None

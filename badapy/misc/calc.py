@@ -1,6 +1,21 @@
 import math
 
 
+def max_climb_thrust(h, C):
+    """
+    Calculate the maximum possible thrust in climb
+    :param h: height [meter]
+    :param C:
+    :return: max thrust [Newton]
+    """
+    h /= 0.3048
+
+
+
+
+
+
+
 def calc_mach(h):
     """
     Calculate the mach number
@@ -18,7 +33,7 @@ def isa_temp(h):
     """
     Calculate the ISA Temperature
     :param h: Height in Meters
-    :return: Temp in Kelvin
+    :return: Temperature in Kelvin
     """
     t = 288.15 - (6.5 / 1000) * h
     t_trop = 288.15 - (6.5 / 1000) * 11000
@@ -30,10 +45,10 @@ def isa_temp(h):
 
 def transition_alt(v_cas, h):
     """
-
-    :param v_cas:
-    :param h:
-    :return:
+    Calculate the transition altitude for the tropopause
+    :param v_cas: calculated air speed
+    :param h: height
+    :return: transition height
     """
     mach = calc_mach(h)
     t_0_isa = 288.15  # Unit: Kelvin

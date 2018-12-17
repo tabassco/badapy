@@ -1,5 +1,6 @@
 import pandas as pd
 import scipy.io as sio
+import numpy as np
 import pickle
 
 
@@ -17,7 +18,7 @@ class Flight():
         :param data_type: Type of the Flight-Data
         :return:
         """
-
+        flight_data = 0
         if data_type == 'csv':
             flight_data = pd.read_csv(data_path)
 
@@ -32,8 +33,6 @@ class Flight():
             if data_type not in ['csv', 'matlab', 'pickle']:
                 raise ValueError('Invalid calculation method. Expected one of: %s' % ['csv', 'matlab', 'pickle'])
 
-        flight_data
-
         self.flightdata = flight_data
 
     def __repr__(self):
@@ -47,16 +46,16 @@ class Flight():
                 1 + (self.flightdata.airspeed / self.used_plane.fuel['cf_2']))
 
         if method_used == 'thrust':  # Thrust specific fuel flow
-            nom_fuel_flow = thrust_spec_fuel_flow * self.flightdata.thrust
+            nom_fuel_flow = thrust_spec_fuel_flow * self.flightdata.thrust[i]
             return nom_fuel_flow
 
         elif method_used == 'minimum':  # Minimum fuel flow
             min_fuel_flow = self.used_plane.fuel['cf_3'] * (
-                        1 - (self.flightdata.height / self.used_plane.fuel['cf_4']))
+                        1 - (self.flightdata.height[i] / self.used_plane.fuel['cf_4']))
             return min_fuel_flow
 
         else:  # Cruise fuel flow
-            cruise_fuel_flow = thrust_spec_fuel_flow * self.flightdata.thrust * self.used_plane.fuel['cf_cr']
+            cruise_fuel_flow = thrust_spec_fuel_flow * self.flightdata.thrust[i] * self.used_plane.fuel['cf_cr']
             return cruise_fuel_flow
 
     def calculate_fuel(self, method_used='minimum', sampling_rate=1):  # TODO: Add iterator for individual waypoints.
@@ -77,6 +76,7 @@ class Flight():
             spec_fuel.append(curr_fuel)
             fuel_sum += curr_fuel
 
+        self.flightdata = self.flightdata.assign(current_fuel=np.array(spec_fuel))
         return fuel_sum
 
     def calculate_distance(self):

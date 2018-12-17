@@ -10,7 +10,7 @@ class Airplane:
         # Information from OPF File
         self.masses = None
         self.flight_env = None
-        self.wing_area = None
+        self.aero = None
         self.config = None
         self.engine = None
         self.fuel = None
@@ -23,7 +23,7 @@ class Airplane:
     def load_information(self, file_path):
         data_folder = path.join(file_path)
 
-        self.masses, self.flight_env, self.wing_area, self.config, self.engine, self.fuel = split_opf(
+        self.masses, self.flight_env, self.aero, self.config, self.engine, self.fuel = split_opf(
             path.join(data_folder, self.type, "__.OPF"))  # add path
 
         self.proc_climb, self.proc_cruise, self.proc_desc = split_afp(path.join(data_folder, self.type, "__.AFP"))

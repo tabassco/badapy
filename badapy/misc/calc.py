@@ -1,19 +1,47 @@
 import math
 
 
-def max_climb_thrust(h, C):
+def density(T):
     """
-    Calculate the maximum possible thrust in climb
-    :param h: height [meter]
-    :param C:
-    :return: max thrust [Newton]
+    Calculate the density
+    :param T:
+    :param h:
+    :return:
     """
+    return 1.225 * ((T / 216.65) ** 4.25583)
+
+
+def max_cruise_thrust(h, T, C_1, C_2, C_3, C_4, C_5):
+    """
+    Maximum Thrust for Cruise flight
+    :param h:
+    :param T:
+    :param C_1: ctc_1
+    :param C_2: ctc_2
+    :param C_3: ctc_3
+    :param C_4: ctc_4
+    :param C_5: ctc_5
+    :return:
+    """
+    return 0.95 * max_climb_thrust(h, T, T, C_1, C_2, C_3, C_4, C_5)
+
+
+def max_climb_thrust(h, T, C_1, C_2, C_3, C_4, C_5):
+    """
+    Maximum Thrust
+    :param h: height in Meters
+    :param T: Temperature in Celsius
+    :param C_1: ctc_1
+    :param C_2: ctc_2
+    :param C_3: ctc_3
+    :param C_4: ctc_4
+    :param C_5: ctc_5
+    :return: max climb thrust in Newton
+    """
+    t_isa = isa_temp(h)
     h /= 0.3048
-
-
-
-
-
+    thrust_isa = C_1 * (1 - (h/C_2) + C_3 * (h ** 2))
+    return thrust_isa * (1 - C_5 * (t_isa - T - C_4))
 
 
 def calc_mach(h):

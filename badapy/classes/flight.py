@@ -2,6 +2,7 @@ import pandas as pd
 import scipy.io as sio
 import numpy as np
 import pickle
+from ..misc.calc import *
 
 
 class Flight():
@@ -11,7 +12,7 @@ class Flight():
         self.flightdata = None
         self.used_plane = used_plane
 
-    def load_flightdata(self, data_path, data_type = 'csv'):
+    def load_flightdata(self, data_path, data_type='csv'):
         """
         Loads the Flight-Data from a given file path and type
         :param data_path: Path to the Flight-Data file
@@ -25,7 +26,7 @@ class Flight():
         elif data_type == 'matlab':
             flight_data = sio.loadmat(data_path)
 
-        elif data_path == 'pickle':
+        elif data_type == 'pickle':
             with open(data_path, 'rb') as data:
                 flight_data = pickle.load(data)
 
@@ -41,40 +42,54 @@ class Flight():
     def __str__(self):
         pass
 
-    def calculate_specific_fuel(self, method_used, i):
+    def calculate_specific_fuel(self, method_used, i, thrust = None):
         thrust_spec_fuel_flow = self.used_plane.fuel['cf_1'] * (
-                1 + (self.flightdata.airspeed / self.used_plane.fuel['cf_2']))
+                1 + ((self.flightdata.airspeed * 3.6 / 1.852) / self.used_plane.fuel['cf_2']))
 
-        if method_used == 'thrust':  # Thrust specific fuel flow
-            nom_fuel_flow = thrust_spec_fuel_flow * self.flightdata.thrust[i]
+        if method_used == 'thrust':  # Thrust specific fuel flow (climb / descent)
+            nom_fuel_flow = thrust_spec_fuel_flow * thrust
             return nom_fuel_flow
 
-        elif method_used == 'minimum':  # Minimum fuel flow
+        elif method_used == 'minimum':  # Minimum fuel flow (idle descent)
             min_fuel_flow = self.used_plane.fuel['cf_3'] * (
-                        1 - (self.flightdata.height[i] / self.used_plane.fuel['cf_4']))
+                        1 - (self.flightdata.alt[i] / self.used_plane.fuel['cf_4']))
             return min_fuel_flow
 
-        else:  # Cruise fuel flow
-            cruise_fuel_flow = thrust_spec_fuel_flow * self.flightdata.thrust[i] * self.used_plane.fuel['cf_cr']
+        else:  # Cruise fuel flow (cruise flight)
+            cruise_fuel_flow = thrust_spec_fuel_flow * thrust * self.used_plane.fuel['cf_cr']
             return cruise_fuel_flow
 
-    def calculate_fuel(self, method_used='minimum', sampling_rate=1):  # TODO: Add iterator for individual waypoints.
+    def calculate_fuel(self, sampling_rate=1):  # TODO: Add iterator for individual waypoints.
         """
         Calculates the Total Fuel Consumption [kg} by adding the specific f
-        :param method_used: Choice of "thrust", "minimum", "cruise"
-        :param sampling_rate: time between waypoints [min]
+        :param sampling_rate: time between waypoints [Hz]
         :return: fuel_sum: total fuel used [kg]
         """
-
-        if method_used not in ['thrust', 'minimum', 'cruise']:
-            raise ValueError('Invalid calculation method. Expected one of: %s' % ['thrust', 'minimum', 'cruise'])
         fuel_sum = 0
         spec_fuel = []
 
         for i in range(self.flightdata.shape[0]):
-            curr_fuel = self.calculate_specific_fuel(method_used, i) * sampling_rate
+            max_cl = max_climb_thrust(self.flightdata.alt[i], self.flightdata.temp[i], self.used_plane.engine['ctc_1'],
+                                      self.used_plane.engine['ctc_2'], self.used_plane.engine['ctc_3'],
+                                      self.used_plane.engine['ctc_4'], self.used_plane.engine['ctc_5'])
+            max_cr = 0.95 * max_cl
+            max_des = self.used_plane.engine['ctd_high'] * max_cl
+            c_l = (2 * self.used_plane.masses['reference'] * 9.81) / (density(self.flightdata.alt[i] * (self.flightdata.airspeed[i] ** 2) * self.used_plane.aero['surf'] * math.cos(0)))
+            c_d = self.used_plane.aero['CD0'] + self.used_plane.aero['CD2'] * (c_l ** 2)
+            drag = 0.5 * c_d * density(self.flightdata.temp[i]) * (self.flightdata.airspeed[i] ** 2) * self.used_plane.aero['surf']
+
+            thrust = drag + self.used_plane.masses['reference'] * ((9.81 * self.flightdata.rocd[i]) / self.flightdata.airspeed[i] + self.flightdata.d_airspeed[i])
+
+            if self.flightdata.rocd[i] == 0 and thrust < max_cr:
+                curr_fuel = self.calculate_specific_fuel('cruise', i, thrust)
+            elif self.flightdata.rocd[i] > 0 and thrust < max_cl:
+                curr_fuel = self.calculate_specific_fuel('thrust', i, thrust)
+            elif self.flightdata.rocd[i] < 0 and max_des < thrust < max_cr:
+                curr_fuel = self.calculate_specific_fuel('minimum', i, thrust)
+            else:
+                curr_fuel = math.inf
             spec_fuel.append(curr_fuel)
-            fuel_sum += curr_fuel
+            fuel_sum += curr_fuel / (sampling_rate / 60)
 
         self.flightdata = self.flightdata.assign(current_fuel=np.array(spec_fuel))
         return fuel_sum

@@ -2,7 +2,7 @@ import pandas as pd
 import scipy.io as sio
 import numpy as np
 import pickle
-from ..misc.calc import *
+from badapy.calculations.calc import *
 
 
 class Flight():

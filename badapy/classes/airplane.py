@@ -29,7 +29,4 @@ class Airplane:
         self.proc_climb, self.proc_cruise, self.proc_desc = split_afp(path.join(data_folder, self.type, "__.AFP"))
 
     def __str__(self):
-        pass
-
-    def __repr__(self):
-        pass
+        return 'Airplane: {}\nModel: {}'.format(self.type, self.model)

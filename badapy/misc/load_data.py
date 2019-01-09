@@ -8,6 +8,11 @@ def split_opf(file_path):
         file = read_in.readlines()
 
     """
+    Description
+    """
+    description = file[14][4:39]
+
+    """
     Masses
     """
     mass = file[18].split()
@@ -34,23 +39,28 @@ def split_opf(file_path):
     # Configuration Characteristics
     config_names = ["Vstall", "CDO", "CD2", "Name"]
     config_CR = file[28].split()
-    config_CR = [float(x) for x in config_CR[4:7]].append('clean')
+    config_CR = [float(x) for x in config_CR[4:7]]
+    config_CR.append(0)
     config_CR_dict = dict(zip(config_names, config_CR))
 
     config_IC = file[29].split()
-    config_IC = [float(x) for x in config_CR[4:7]].append('Flap18')
+    config_IC = [float(x) for x in config_IC[4:7]]
+    config_IC.append(18)
     config_IC_dict = dict(zip(config_names, config_IC))
 
     config_TO = file[30].split()
-    config_TO = [float(x) for x in config_CR[4:7]].append('Flap24')
+    config_TO = [float(x) for x in config_TO[4:7]]
+    config_TO.append(24)
     config_TO_dict = dict(zip(config_names, config_TO))
 
     config_AP = file[31].split()
-    config_AP = [float(x) for x in config_CR[4:7]].append('Flap30')
+    config_AP = [float(x) for x in config_AP[4:7]]
+    config_AP.append(30)
     config_AP_dict = dict(zip(config_names, config_AP))
 
     config_LD = file[32].split()
-    config_LD = [float(x) for x in config_CR[4:7]].append('Flap33')
+    config_LD = [float(x) for x in config_LD[4:7]]
+    config_LD.append(33)
     config_LD_dict = dict(zip(config_names, config_LD))
 
     """
@@ -87,12 +97,12 @@ def split_opf(file_path):
     fuel_desc_dict = dict(zip(fuel_desc_names, fuel_desc_val))
 
     fuel_cruise = file[55].split()
-    fuel_cruise = [float(x) for x in fuel_cruise[1]]
+    fuel_cruise = [float(x) for x in fuel_cruise[1:2]]
     fuel_dict = dict(zip(["cf_cr"], fuel_cruise))
 
     fuel_dict = {**fuel_thrust_dict, **fuel_desc_dict, **fuel_dict}
 
-    return mass_dict, flight_env_dict, aero_dict, config_CR_dict, engine_dict, fuel_dict
+    return description, mass_dict, flight_env_dict, aero_dict, config_CR_dict, engine_dict, fuel_dict
 
 
 def split_afp(file_path):

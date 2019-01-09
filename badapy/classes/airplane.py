@@ -6,6 +6,7 @@ class Airplane:
     def __init__(self, plane_type, model):
         self.type = plane_type
         self.model = model
+        self.description = None
 
         # Information from OPF File
         self.masses = None
@@ -23,10 +24,13 @@ class Airplane:
     def load_information(self, file_path):
         data_folder = path.join(file_path)
 
-        self.masses, self.flight_env, self.aero, self.config, self.engine, self.fuel = split_opf(
-            path.join(data_folder, self.type, "__.OPF"))  # add path
+        self.description, self.masses, self.flight_env, self.aero, self.config, self.engine, self.fuel = split_opf(
+            path.join(data_folder, self.type + "__.OPF"))
 
-        self.proc_climb, self.proc_cruise, self.proc_desc = split_afp(path.join(data_folder, self.type, "__.AFP"))
+        self.proc_climb, self.proc_cruise, self.proc_desc = split_afp(path.join(data_folder, (self.type + "__.AFP")))
 
     def __str__(self):
-        return 'Airplane: {}\nModel: {}'.format(self.type, self.model)
+        return '{}'.format(self.description)
+
+    def __repr__(self):
+        return '{}'.format(self.description)

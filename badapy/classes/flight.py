@@ -32,7 +32,7 @@ class Flight():
 
         else:
             if data_type not in ['csv', 'matlab', 'pickle']:
-                raise ValueError('Invalid calculation method. Expected one of: %s' % ['csv', 'matlab', 'pickle'])
+                raise ValueError('Invalid file format. Expected one of: %s' % ['csv', 'matlab', 'pickle'])
 
         self.flightdata = flight_data
 

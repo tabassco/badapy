@@ -8,7 +8,7 @@ def density(T):
     :param h:
     :return:
     """
-    return 1.225 * ((T / 216.65) ** 4.25583)
+    return 1.225 * ((T / 288.15) ** 4.25583)
 
 
 def max_cruise_thrust(h, T, C_1, C_2, C_3, C_4, C_5):
@@ -44,7 +44,7 @@ def max_climb_thrust(h, T, C_1, C_2, C_3, C_4, C_5):
     return thrust_isa * (1 - C_5 * (t_isa - T - C_4))
 
 
-def calc_mach(h):
+def calc_speed_of_sound(h):
     """
     Calculate the mach number
     :param h:
@@ -78,7 +78,7 @@ def transition_alt(v_cas, h):
     :param h: height
     :return: transition height
     """
-    mach = calc_mach(h)
+    mach = calc_speed_of_sound(h)
     t_0_isa = 288.15  # Unit: Kelvin
     delta_trans = ((1 + 0.2 * (v_cas / 340.29) ** 2) ** 3.5 - 1) / ((1 + 0.2 * (mach ** 2)) ** 3.5 - 1)  # Func: 3.2-20
     theta_trans = delta_trans ** (1/5.25583)  # Using Approx: 3.2-15  -- Func: 3.2-19

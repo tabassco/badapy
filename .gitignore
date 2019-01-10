@@ -3,6 +3,8 @@
 *.APF
 *.PTD
 *.PTF
+*.csv
+*.csv#
 
 
 # pycharm files

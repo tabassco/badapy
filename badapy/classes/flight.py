@@ -5,6 +5,7 @@ import pickle
 from badapy.calculations.calc import *
 
 
+
 class Flight():
     def __init__(self, tailsign, flightno, used_plane):
         self.tailsign = tailsign
@@ -34,17 +35,22 @@ class Flight():
             if data_type not in ['csv', 'matlab', 'pickle']:
                 raise ValueError('Invalid file format. Expected one of: %s' % ['csv', 'matlab', 'pickle'])
 
+        flight_data['temp']=flight_data['temp'].apply(lambda x: x + 273.15)
+        flight_data['alt']=flight_data['alt'].apply(lambda x: x * 0.3048)
+        flight_data['rocd']=flight_data['rocd'].apply(lambda x: x * 0.3048)
+        flight_data['airspeed']=flight_data['airspeed'].apply(lambda x: x * 0.514444)
+
         self.flightdata = flight_data
 
     def __repr__(self):
-        pass
+        return 'i exist'
 
     def __str__(self):
-        pass
+        return 'i exist'
 
     def calculate_specific_fuel(self, method_used, i, thrust = None):
         thrust_spec_fuel_flow = self.used_plane.fuel['cf_1'] * (
-                1 + ((self.flightdata.airspeed * 3.6 / 1.852) / self.used_plane.fuel['cf_2']))
+                1 + ((self.flightdata.airspeed[i] / 0.514444) / self.used_plane.fuel['cf_2']))
 
         if method_used == 'thrust':  # Thrust specific fuel flow (climb / descent)
             nom_fuel_flow = thrust_spec_fuel_flow * thrust
@@ -75,21 +81,27 @@ class Flight():
             max_cr = 0.95 * max_cl
             max_des = self.used_plane.engine['ctd_high'] * max_cl
             c_l = (2 * self.used_plane.masses['reference'] * 9.81) / (density(self.flightdata.alt[i] * (self.flightdata.airspeed[i] ** 2) * self.used_plane.aero['surf'] * math.cos(0)))
-            c_d = self.used_plane.aero['CD0'] + self.used_plane.aero['CD2'] * (c_l ** 2)
+            c_d = self.used_plane.config['CD0'] + self.used_plane.config['CD2'] * (c_l ** 2)
             drag = 0.5 * c_d * density(self.flightdata.temp[i]) * (self.flightdata.airspeed[i] ** 2) * self.used_plane.aero['surf']
-
-            thrust = drag + self.used_plane.masses['reference'] * ((9.81 * self.flightdata.rocd[i]) / self.flightdata.airspeed[i] + self.flightdata.d_airspeed[i])
+            if i == 0:
+                thrust = drag + self.used_plane.masses['reference'] * 1000 * ((9.81 * self.flightdata.rocd[i]) / self.flightdata.airspeed[i] + 0/sampling_rate)
+            else:
+                thrust = drag + self.used_plane.masses['reference'] * 1000 * ((9.81 * self.flightdata.rocd[i]) / self.flightdata.airspeed[i] + (self.flightdata.airspeed[i]-self.flightdata.airspeed[i-1])/sampling_rate)
 
             if self.flightdata.rocd[i] == 0 and thrust < max_cr:
-                curr_fuel = self.calculate_specific_fuel('cruise', i, thrust)
+                curr_fuel = self.calculate_specific_fuel('cruise', i, thrust/1000)
+                print('CORR')
             elif self.flightdata.rocd[i] > 0 and thrust < max_cl:
-                curr_fuel = self.calculate_specific_fuel('thrust', i, thrust)
+                curr_fuel = self.calculate_specific_fuel('thrust', i, thrust/1000)
             elif self.flightdata.rocd[i] < 0 and max_des < thrust < max_cr:
-                curr_fuel = self.calculate_specific_fuel('minimum', i, thrust)
+                curr_fuel = self.calculate_specific_fuel('minimum', i, thrust/1000)
             else:
-                curr_fuel = math.inf
+                curr_fuel = 0
+                # curr_fuel = math.inf
+                print('ERROR')
             spec_fuel.append(curr_fuel)
             fuel_sum += curr_fuel / (sampling_rate / 60)
+        print(fuel_sum)
 
         self.flightdata = self.flightdata.assign(current_fuel=np.array(spec_fuel))
         return fuel_sum

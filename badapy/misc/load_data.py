@@ -37,7 +37,7 @@ def split_opf(file_path):
     aero_dict = dict(zip(aero_names, aero))
 
     # Configuration Characteristics
-    config_names = ["Vstall", "CDO", "CD2", "Name"]
+    config_names = ["Vstall", "CD0", "CD2", "Name"]
     config_CR = file[28].split()
     config_CR = [float(x) for x in config_CR[4:7]]
     config_CR.append(0)

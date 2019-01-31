@@ -5,8 +5,7 @@ import pickle
 from badapy.calculations.calc import *
 
 
-
-class Flight():
+class Flight:
     def __init__(self, tailsign, flightno, used_plane):
         self.tailsign = tailsign
         self.flightno = flightno
@@ -23,6 +22,10 @@ class Flight():
         flight_data = 0
         if data_type == 'csv':
             flight_data = pd.read_csv(data_path)
+            flight_data['temp'] = flight_data['temp'].apply(lambda x: x + 273.15)
+            flight_data['alt'] = flight_data['alt'].apply(lambda x: x * 0.3048)
+            flight_data['rocd'] = flight_data['rocd'].apply(lambda x: x * 0.3048)
+            flight_data['airspeed'] = flight_data['airspeed'].apply(lambda x: x * 0.514444)
 
         elif data_type == 'matlab':
             flight_data = sio.loadmat(data_path)
@@ -35,18 +38,19 @@ class Flight():
             if data_type not in ['csv', 'matlab', 'pickle']:
                 raise ValueError('Invalid file format. Expected one of: %s' % ['csv', 'matlab', 'pickle'])
 
-        flight_data['temp']=flight_data['temp'].apply(lambda x: x + 273.15)
-        flight_data['alt']=flight_data['alt'].apply(lambda x: x * 0.3048)
-        flight_data['rocd']=flight_data['rocd'].apply(lambda x: x * 0.3048)
-        flight_data['airspeed']=flight_data['airspeed'].apply(lambda x: x * 0.514444)
-
         self.flightdata = flight_data
 
     def __repr__(self):
-        return 'i exist'
+        if self.flightdata is None:
+            return 'Flight. No Flight-Data exists.'
+        else:
+            return 'Flight. Flight-Data exists.'
 
     def __str__(self):
-        return 'i exist'
+        if self.flightdata is None:
+            return 'No Flight-Data exists. Plane:{}'.format(self.used_plane)
+        else:
+            return 'Flight with {0} recorded data-points. Plane:{1}'.format(self.flightdata.shape[0], self.used_plane)
 
     def calculate_specific_fuel(self, method_used, i, thrust = None):
         thrust_spec_fuel_flow = self.used_plane.fuel['cf_1'] * (
@@ -68,7 +72,7 @@ class Flight():
     def calculate_fuel(self, sampling_rate=1):  # TODO: Add iterator for individual waypoints.
         """
         Calculates the Total Fuel Consumption [kg} by adding the specific f
-        :param sampling_rate: time between waypoints [Hz]
+        :param sampling_rate: time between recorded signals [Hz]
         :return: fuel_sum: total fuel used [kg]
         """
         fuel_sum = 0
@@ -84,26 +88,28 @@ class Flight():
             c_d = self.used_plane.config['CD0'] + self.used_plane.config['CD2'] * (c_l ** 2)
             drag = 0.5 * c_d * density(self.flightdata.temp[i]) * (self.flightdata.airspeed[i] ** 2) * self.used_plane.aero['surf']
             if i == 0:
-                thrust = drag + self.used_plane.masses['reference'] * 1000 * ((9.81 * self.flightdata.rocd[i]) / self.flightdata.airspeed[i] + 0/sampling_rate)
+                #  thrust = drag + self.used_plane.masses['reference'] * 1000 * ((9.81 * self.flightdata.rocd[i]) / self.flightdata.airspeed[i] + 0/sampling_rate)
+                curr_fuel = np.nan
+                spec_fuel.append(curr_fuel)
+                continue
             else:
-                thrust = drag + self.used_plane.masses['reference'] * 1000 * ((9.81 * self.flightdata.rocd[i]) / self.flightdata.airspeed[i] + (self.flightdata.airspeed[i]-self.flightdata.airspeed[i-1])/sampling_rate)
+                thrust = drag + self.used_plane.masses['reference'] * 1000 * ((9.81 * (self.flightdata.alt[i]-self.flightdata.alt[i-1]) / sampling_rate) / self.flightdata.airspeed[i] + (self.flightdata.airspeed[i]-self.flightdata.airspeed[i-1])/sampling_rate)
 
             if self.flightdata.rocd[i] == 0 and thrust < max_cr:
                 curr_fuel = self.calculate_specific_fuel('cruise', i, thrust/1000)
-                print('CORR')
             elif self.flightdata.rocd[i] > 0 and thrust < max_cl:
                 curr_fuel = self.calculate_specific_fuel('thrust', i, thrust/1000)
             elif self.flightdata.rocd[i] < 0 and max_des < thrust < max_cr:
                 curr_fuel = self.calculate_specific_fuel('minimum', i, thrust/1000)
             else:
-                curr_fuel = 0
-                # curr_fuel = math.inf
-                print('ERROR')
+                curr_fuel = np.nan
             spec_fuel.append(curr_fuel)
             fuel_sum += curr_fuel / (sampling_rate / 60)
         print(fuel_sum)
 
         self.flightdata = self.flightdata.assign(current_fuel=np.array(spec_fuel))
+        self.flightdata = (self.flightdata.ffill() + self.flightdata.bfill())/2
+        self.flightdata = self.flightdata.bfill().ffill()
         return fuel_sum
 
     def calculate_distance(self):

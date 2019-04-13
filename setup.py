@@ -11,7 +11,7 @@ with open('README.md') as readme_file:
 
 setuptools.setup(
     name="badapy",
-    version="0.9",
+    version="0.1",
     author="Tim Kreitner",
     author_email="tim@kreitner.xyz",
     description="A python package implementation of the EUROCONTROL BADA calculationse.",

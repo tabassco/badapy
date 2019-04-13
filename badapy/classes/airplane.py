@@ -1,4 +1,4 @@
-from ..misc.load_data import *
+from badapy.misc.load_data import split_opf, split_afp
 from os import path
 
 

@@ -1,36 +1,28 @@
 def split_opf(file_path):
     """
     returns a set of lists with aircraft performance parameters
-    :param file_path:
-    :return: 
+    :param file_path: path to OPF-File
+    :return: set of Airplane Parameters of OPF file
     """
     with open(file_path) as read_in:
         file = read_in.readlines()
 
-    """
-    Description
-    """
+    #  Description
     description = file[14][4:39]
 
-    """
-    Masses
-    """
+    #  Masses
     mass = file[18].split()
     mass_names = ["reference", "minimum", "maximum", "max_payload", "mass_grad"]
     mass = [float(x) for x in mass[1:6]]
     mass_dict = dict(zip(mass_names, mass))
 
-    """
-    Flight Envelope
-    """
+    #  Flight envelope
     flight_env = file[21].split()
     flight_env = [float(x) for x in flight_env[1:6]]
     flight_env_names = ["VMO", "MMO", "max_alt", "h_max", "temp_grad"]
     flight_env_dict = dict(zip(flight_env_names, flight_env))
 
-    """
-    Aerodynamics
-    """
+    #  Aerodynamics
     aero = file[25].split()
     aero = [float(x) for x in aero[2:6]]
     aero_names = ["surf", "Clbo", "k", "CM16"]
@@ -63,9 +55,7 @@ def split_opf(file_path):
     config_LD.append(33)
     config_LD_dict = dict(zip(config_names, config_LD))
 
-    """
-    Engine Thrust
-    """
+    #  Engine thrust
     climb_thrust = file[44].split()
     climb_thrust = [float(x) for x in climb_thrust[1:6]]
     climb_names = ["ctc_1", "ctc_2", "ctc_3", "ctc_4", "ctc_5"]
@@ -83,9 +73,7 @@ def split_opf(file_path):
 
     engine_dict = {**climb_dict, **desc_dict, **ref_dict}
 
-    """
-    Fuel Consumption
-    """
+    # Fuel consumption
     fuel_thrust_val = file[51].split()
     fuel_thrust_val = [float(x) for x in fuel_thrust_val[1:3]]
     fuel_thrust_names = ["cf_1", "cf_2"]
@@ -106,6 +94,11 @@ def split_opf(file_path):
 
 
 def split_afp(file_path):
+    """
+    returns a list of airplane parameters for operations
+    :param file_path: path to AFP-File
+    :return:
+    """
     procedure_climb_dict = None
     procedure_cruise_dict = None
     procedure_desc_dict = None

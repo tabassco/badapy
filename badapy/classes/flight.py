@@ -2,8 +2,8 @@ import pandas as pd
 import scipy.io as sio
 import numpy as np
 import pickle
-from badapy.calculations.calc import *
-
+from badapy.calculations.calc import density, max_climb_thrust, calc_speed_of_sound
+from math import sqrt, cos
 
 class Flight:
     def __init__(self, tailsign, flightno, used_plane):
@@ -40,6 +40,12 @@ class Flight:
 
         self.flightdata = flight_data
 
+    def save_flightdata(self, out_path, data_type='csv'):
+        if data_type == 'csv':
+            self.flightdata.to_csv(out_path, sep=';')
+        else:
+            raise ValueError('Not in possible solutions yet.')
+
     def __repr__(self):
         if self.flightdata is None:
             return 'Flight. No Flight-Data exists.'
@@ -69,7 +75,7 @@ class Flight:
             cruise_fuel_flow = thrust_spec_fuel_flow * thrust * self.used_plane.fuel['cf_cr']
             return cruise_fuel_flow
 
-    def calculate_fuel(self, sampling_rate=1):  # TODO: Add iterator for individual waypoints.
+    def calculate_fuel(self, sampling_rate=1):
         """
         Calculates the Total Fuel Consumption [kg} by adding the specific f
         :param sampling_rate: time between recorded signals [Hz]
@@ -84,7 +90,7 @@ class Flight:
                                       self.used_plane.engine['ctc_4'], self.used_plane.engine['ctc_5'])
             max_cr = 0.95 * max_cl
             max_des = self.used_plane.engine['ctd_high'] * max_cl
-            c_l = (2 * self.used_plane.masses['reference'] * 9.81) / (density(row.alt * (row.airspeed ** 2) * self.used_plane.aero['surf'] * math.cos(0)))
+            c_l = (2 * self.used_plane.masses['reference'] * 9.81) / (density(row.alt * (row.airspeed ** 2) * self.used_plane.aero['surf'] * cos(0)))
             c_d = self.used_plane.config['CD0'] + self.used_plane.config['CD2'] * (c_l ** 2)
             drag = 0.5 * c_d * density(row.temp) * (row.airspeed ** 2) * self.used_plane.aero['surf']
             if i == 0:
@@ -111,6 +117,15 @@ class Flight:
         self.flightdata = (self.flightdata.ffill() + self.flightdata.bfill())/2
         self.flightdata = self.flightdata.bfill().ffill()
         return fuel_sum
+
+    def spec_range(self):
+        numerator = 344 * calc_speed_of_sound(self.flightdata.alt[self.flightdata.shape[0]/2]) * (15)
+        thrust_spec_fuel_flow = self.used_plane.fuel['cf_1'] * (
+                1 + ((self.flightdata.airspeed.mean() / 0.514444) / self.used_plane.fuel['cf_2']))
+
+        denominator = thrust_spec_fuel_flow * self.used_plane.masses['reference'] * 9.81 /(sqrt((self.flightdata.temp.mean()+273.15)/288.15))
+        return numerator / denominator
+
 
     def calculate_distance(self):
         pass

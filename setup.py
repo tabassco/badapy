@@ -1,20 +1,30 @@
+# !/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""The setup script."""
+
 import setuptools
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+from os import path
+
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
+
 
 setuptools.setup(
     name="badapy",
-    version="0.2",
+    version="0.1",
     author="Tim Kreitner",
     author_email="tim@kreitner.xyz",
-    description="python package implementation of the EUROCONTROL BADA calculationse",
+    description="A python package implementation of the EUROCONTROL BADA calculationse.",
     classifiers=['Programming Language :: Python :: 3.6',
                  'Development Status :: Beta'],
+    url="https://github.com/tabassco/badapy",
     long_description=long_description,
-    long_description_content_type="text/markdown",
-    #url="https://github.com/pypa/sampleproject",
+    long_description_content_type='text/markdown',
     packages=setuptools.find_packages(),
+    python_reqires='>=3.5',
     install_requires=[
         'pandas',
         'numpy',

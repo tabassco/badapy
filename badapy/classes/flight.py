@@ -123,12 +123,18 @@ class Flight:
         thrust_spec_fuel_flow = self.used_plane.fuel['cf_1'] * (
                 1 + ((self.flightdata.airspeed.mean() / 0.514444) / self.used_plane.fuel['cf_2']))
 
-        denominator = thrust_spec_fuel_flow * self.used_plane.masses['reference'] * 9.81 /(sqrt((self.flightdata.temp.mean()+273.15)/288.15))
+        denominator = thrust_spec_fuel_flow * self.used_plane.masses['reference'] *1000 * 9.81 /(sqrt((self.flightdata.temp.mean()+273.15)/288.15))
         return numerator / denominator
 
+    def external_spec_range(self, airspeed, altitude, temperature):
+        numerator = 344 * calc_speed_of_sound(altitude) * (15)
+        thrust_spec_fuel_flow = self.used_plane.fuel['cf_1'] * (
+                1 + ((airspeed) / self.used_plane.fuel['cf_2']))
+
+        denominator = thrust_spec_fuel_flow * self.used_plane.masses['reference']*1000 * 9.81 /(sqrt((temperature+273.15)/288.15))
+        return numerator / denominator
 
     def calculate_distance(self):
-        pass
-
-    def show_waypoints(self):
-        pass
+        distance = self.flightdata.airspeed.sum()
+        distance /= self.flightdata.shape[0]
+        return distance

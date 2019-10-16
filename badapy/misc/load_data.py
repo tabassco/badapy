@@ -90,7 +90,15 @@ def split_opf(file_path):
 
     fuel_dict = {**fuel_thrust_dict, **fuel_desc_dict, **fuel_dict}
 
-    return description, mass_dict, flight_env_dict, aero_dict, config_CR_dict, engine_dict, fuel_dict
+    return (
+        description,
+        mass_dict,
+        flight_env_dict,
+        aero_dict,
+        config_CR_dict,
+        engine_dict,
+        fuel_dict,
+    )
 
 
 def split_afp(file_path):

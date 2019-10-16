@@ -5,6 +5,7 @@ import pickle
 from badapy.calculations.calc import density, max_climb_thrust, calc_speed_of_sound
 from math import sqrt, cos
 
+
 class Flight:
     def __init__(self, tailsign, flightno, used_plane):
         self.tailsign = tailsign
@@ -12,67 +13,80 @@ class Flight:
         self.flightdata = None
         self.used_plane = used_plane
 
-    def load_flightdata(self, data_path, data_type='csv'):
+    def load_flightdata(self, data_path, data_type="csv"):
         """
-        Loads the Flight-Data from a given file path and type
-        :param data_path: Path to the Flight-Data file
-        :param data_type: Type of the Flight-Data
-        :return:
+        Loads the Flight-Data from a given file path and type.
+
+        Args:
+            data_path: Path to the Flight-Data file
+            data_type: Type of the Flight-Data
+
         """
         flight_data = 0
-        if data_type == 'csv':
+        if data_type == "csv":
             flight_data = pd.read_csv(data_path)
-            flight_data['temp'] = flight_data['temp'].apply(lambda x: x + 273.15)
-            flight_data['alt'] = flight_data['alt'].apply(lambda x: x * 0.3048)
-            flight_data['rocd'] = flight_data['rocd'].apply(lambda x: x * 0.3048)
-            flight_data['airspeed'] = flight_data['airspeed'].apply(lambda x: x * 0.514444)
-
-        elif data_type == 'matlab':
-            flight_data = sio.loadmat(data_path)
-
-        elif data_type == 'pickle':
-            with open(data_path, 'rb') as data:
-                flight_data = pickle.load(data)
-
+            flight_data["temp"] = flight_data["temp"].apply(lambda x: x + 273.15)
+            flight_data["alt"] = flight_data["alt"].apply(lambda x: x * 0.3048)
+            flight_data["rocd"] = flight_data["rocd"].apply(lambda x: x * 0.3048)
+            flight_data["airspeed"] = flight_data["airspeed"].apply(
+                lambda x: x * 0.514444
+            )
         else:
-            if data_type not in ['csv', 'matlab', 'pickle']:
-                raise ValueError('Invalid file format. Expected one of: %s' % ['csv', 'matlab', 'pickle'])
+            if data_type == "matlab":
+                flight_data = sio.loadmat(data_path)
+
+            else:
+                if data_type == "pickle":
+                    with open(data_path, "rb") as data:
+                        flight_data = pickle.load(data)
+
+                else:
+                    if data_type not in ["csv", "matlab", "pickle"]:
+                        raise ValueError(
+                            "Invalid file format. Expected one of: %s"
+                            % ["csv", "matlab", "pickle"]
+                        )
 
         self.flightdata = flight_data
 
-    def save_flightdata(self, out_path, data_type='csv'):
-        if data_type == 'csv':
-            self.flightdata.to_csv(out_path, sep=';')
+    def save_flightdata(self, out_path, data_type="csv"):
+        if data_type == "csv":
+            self.flightdata.to_csv(out_path, sep=";")
         else:
-            raise ValueError('Not in possible solutions yet.')
+            raise ValueError("Not in possible solutions yet.")
 
     def __repr__(self):
         if self.flightdata is None:
-            return 'Flight. No Flight-Data exists.'
+            return "Flight. No Flight-Data exists."
         else:
-            return 'Flight. Flight-Data exists.'
+            return "Flight. Flight-Data exists."
 
     def __str__(self):
         if self.flightdata is None:
-            return 'No Flight-Data exists. Plane:{}'.format(self.used_plane)
+            return "No Flight-Data exists. Plane:{}".format(self.used_plane)
         else:
-            return 'Flight with {0} recorded data-points. Plane:{1}'.format(self.flightdata.shape[0], self.used_plane)
+            return f"Flight with {self.flightdata.shape[0]} recorded data-points. Plane:{self.used_plane}"
 
-    def calculate_specific_fuel(self, method_used, i, thrust = None):
-        thrust_spec_fuel_flow = self.used_plane.fuel['cf_1'] * (
-                1 + ((self.flightdata.airspeed[i] / 0.514444) / self.used_plane.fuel['cf_2']))
+    def calculate_specific_fuel(self, method_used, i, thrust=None):
+        thrust_spec_fuel_flow = self.used_plane.fuel["cf_1"] * (
+            1
+            + ((self.flightdata.airspeed[i] / 0.514444) / self.used_plane.fuel["cf_2"])
+        )
 
-        if method_used == 'thrust':  # Thrust specific fuel flow (climb / descent)
+        if method_used == "thrust":  # Thrust specific fuel flow (climb / descent)
             nom_fuel_flow = thrust_spec_fuel_flow * thrust
             return nom_fuel_flow
 
-        elif method_used == 'minimum':  # Minimum fuel flow (idle descent)
-            min_fuel_flow = self.used_plane.fuel['cf_3'] * (
-                        1 - (self.flightdata.alt[i] / self.used_plane.fuel['cf_4']))
+        elif method_used == "minimum":  # Minimum fuel flow (idle descent)
+            min_fuel_flow = self.used_plane.fuel["cf_3"] * (
+                1 - (self.flightdata.alt[i] / self.used_plane.fuel["cf_4"])
+            )
             return min_fuel_flow
 
         else:  # Cruise fuel flow (cruise flight)
-            cruise_fuel_flow = thrust_spec_fuel_flow * thrust * self.used_plane.fuel['cf_cr']
+            cruise_fuel_flow = (
+                thrust_spec_fuel_flow * thrust * self.used_plane.fuel["cf_cr"]
+            )
             return cruise_fuel_flow
 
     def calculate_fuel(self, sampling_rate=1):
@@ -85,28 +99,53 @@ class Flight:
         spec_fuel = []
 
         for i, row in self.flightdata.iterrows():
-            max_cl = max_climb_thrust(row.alt, row.temp, self.used_plane.engine['ctc_1'],
-                                      self.used_plane.engine['ctc_2'], self.used_plane.engine['ctc_3'],
-                                      self.used_plane.engine['ctc_4'], self.used_plane.engine['ctc_5'])
+            max_cl = max_climb_thrust(
+                row.alt,
+                row.temp,
+                self.used_plane.engine["ctc_1"],
+                self.used_plane.engine["ctc_2"],
+                self.used_plane.engine["ctc_3"],
+                self.used_plane.engine["ctc_4"],
+                self.used_plane.engine["ctc_5"],
+            )
             max_cr = 0.95 * max_cl
-            max_des = self.used_plane.engine['ctd_high'] * max_cl
-            c_l = (2 * self.used_plane.masses['reference'] * 9.81) / (density(row.alt * (row.airspeed ** 2) * self.used_plane.aero['surf'] * cos(0)))
-            c_d = self.used_plane.config['CD0'] + self.used_plane.config['CD2'] * (c_l ** 2)
-            drag = 0.5 * c_d * density(row.temp) * (row.airspeed ** 2) * self.used_plane.aero['surf']
+            max_des = self.used_plane.engine["ctd_high"] * max_cl
+            c_l = (2 * self.used_plane.masses["reference"] * 9.81) / (
+                density(
+                    row.alt
+                    * (row.airspeed ** 2)
+                    * self.used_plane.aero["surf"]
+                    * cos(0)
+                )
+            )
+            c_d = self.used_plane.config["CD0"] + self.used_plane.config["CD2"] * (
+                c_l ** 2
+            )
+            drag = (
+                0.5
+                * c_d
+                * density(row.temp)
+                * (row.airspeed ** 2)
+                * self.used_plane.aero["surf"]
+            )
             if i == 0:
                 #  thrust = drag + self.used_plane.masses['reference'] * 1000 * ((9.81 * self.flightdata.rocd[i]) / self.flightdata.airspeed[i] + 0/sampling_rate)
                 curr_fuel = np.nan
                 spec_fuel.append(curr_fuel)
                 continue
             else:
-                thrust = drag + self.used_plane.masses['reference'] * 1000 * ((9.81 * (row.alt-self.flightdata.alt[i-1]) / sampling_rate) / row.airspeed + (row.airspeed-self.flightdata.airspeed[i-1])/sampling_rate)
+                thrust = drag + self.used_plane.masses["reference"] * 1000 * (
+                    (9.81 * (row.alt - self.flightdata.alt[i - 1]) / sampling_rate)
+                    / row.airspeed
+                    + (row.airspeed - self.flightdata.airspeed[i - 1]) / sampling_rate
+                )
 
             if row.rocd == 0 and thrust < max_cr:
-                curr_fuel = self.calculate_specific_fuel('cruise', i, thrust/1000)
+                curr_fuel = self.calculate_specific_fuel("cruise", i, thrust / 1000)
             elif row.rocd > 0 and thrust < max_cl:
-                curr_fuel = self.calculate_specific_fuel('thrust', i, thrust/1000)
+                curr_fuel = self.calculate_specific_fuel("thrust", i, thrust / 1000)
             elif row.rocd < 0 and max_des < thrust < max_cr:
-                curr_fuel = self.calculate_specific_fuel('minimum', i, thrust/1000)
+                curr_fuel = self.calculate_specific_fuel("minimum", i, thrust / 1000)
             else:
                 curr_fuel = np.nan
             spec_fuel.append(curr_fuel)
@@ -114,24 +153,46 @@ class Flight:
         print(fuel_sum)
 
         self.flightdata = self.flightdata.assign(current_fuel=np.array(spec_fuel))
-        self.flightdata = (self.flightdata.ffill() + self.flightdata.bfill())/2
+        self.flightdata = (self.flightdata.ffill() + self.flightdata.bfill()) / 2
         self.flightdata = self.flightdata.bfill().ffill()
         return fuel_sum
 
     def spec_range(self):
-        numerator = 344 * calc_speed_of_sound(self.flightdata.alt[self.flightdata.shape[0]/2]) * (15)
-        thrust_spec_fuel_flow = self.used_plane.fuel['cf_1'] * (
-                1 + ((self.flightdata.airspeed.mean() / 0.514444) / self.used_plane.fuel['cf_2']))
+        numerator = (
+            344
+            * calc_speed_of_sound(self.flightdata.alt[self.flightdata.shape[0] / 2])
+            * (15)
+        )
+        thrust_spec_fuel_flow = self.used_plane.fuel["cf_1"] * (
+            1
+            + (
+                (self.flightdata.airspeed.mean() / 0.514444)
+                / self.used_plane.fuel["cf_2"]
+            )
+        )
 
-        denominator = thrust_spec_fuel_flow * self.used_plane.masses['reference'] *1000 * 9.81 /(sqrt((self.flightdata.temp.mean()+273.15)/288.15))
+        denominator = (
+            thrust_spec_fuel_flow
+            * self.used_plane.masses["reference"]
+            * 1000
+            * 9.81
+            / (sqrt((self.flightdata.temp.mean() + 273.15) / 288.15))
+        )
         return numerator / denominator
 
     def external_spec_range(self, airspeed, altitude, temperature):
         numerator = 344 * calc_speed_of_sound(altitude) * (15)
-        thrust_spec_fuel_flow = self.used_plane.fuel['cf_1'] * (
-                1 + ((airspeed) / self.used_plane.fuel['cf_2']))
+        thrust_spec_fuel_flow = self.used_plane.fuel["cf_1"] * (
+            1 + ((airspeed) / self.used_plane.fuel["cf_2"])
+        )
 
-        denominator = thrust_spec_fuel_flow * self.used_plane.masses['reference']*1000 * 9.81 /(sqrt((temperature+273.15)/288.15))
+        denominator = (
+            thrust_spec_fuel_flow
+            * self.used_plane.masses["reference"]
+            * 1000
+            * 9.81
+            / (sqrt((temperature + 273.15) / 288.15))
+        )
         return numerator / denominator
 
     def calculate_distance(self):

@@ -40,7 +40,7 @@ def max_climb_thrust(h, T, C_1, C_2, C_3, C_4, C_5):
     """
     t_isa = isa_temp(h)
     h /= 0.3048
-    thrust_isa = C_1 * (1 - (h/C_2) + C_3 * (h ** 2))
+    thrust_isa = C_1 * (1 - (h / C_2) + C_3 * (h ** 2))
     return thrust_isa * (1 - C_5 * (t_isa - T - C_4))
 
 
@@ -80,8 +80,10 @@ def transition_alt(v_cas, h):
     """
     mach = calc_speed_of_sound(h)
     t_0_isa = 288.15  # Unit: Kelvin
-    delta_trans = ((1 + 0.2 * (v_cas / 340.29) ** 2) ** 3.5 - 1) / ((1 + 0.2 * (mach ** 2)) ** 3.5 - 1)  # Func: 3.2-20
-    theta_trans = delta_trans ** (1/5.25583)  # Using Approx: 3.2-15  -- Func: 3.2-19
+    delta_trans = ((1 + 0.2 * (v_cas / 340.29) ** 2) ** 3.5 - 1) / (
+        (1 + 0.2 * (mach ** 2)) ** 3.5 - 1
+    )  # Func: 3.2-20
+    theta_trans = delta_trans ** (1 / 5.25583)  # Using Approx: 3.2-15  -- Func: 3.2-19
     h_trans = (1000 / (0.3048 * 6.5)) * t_0_isa * (1 - theta_trans)  # Func: 3.2-18
 
     return h_trans
